@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+    mongodb:
+        image: mongo:3.6.8
+        hostname: localhost
+        container_name: mongodb-docker
+        restart: unless-stopped
+        ports:
+          - 27017:27017
+        volumes:
+          - mongodb:/data/db
+          - mongodb_log:/var/log/mongodb
+          - mongodb_config:/data/configdb
+          - ./src/main/resources/database:/docker-entrypoint-initdb.d
+        environment:
+          - MONGO_INITDB_ROOT_USERNAME=productListUser
+          - MONGO_INITDB_ROOT_PASSWORD=productListPassword
+        networks:
+          - spring-cloud-network
+    palindrome-api:
+        image: 'palindrome-api:latest'
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: palindrome-api
+        ports:
+          - 8080:8080
+        environment:
+          - MONGODB_HOST=mongodb-docker
+          - MONGODB_PORT=27017
+          - MONGODB_USERNAME=productListUser
+          - MONGODB_PASSWORD=productListPassword
+          - MONGODB_DATABASE=promotions
+        restart: always
+        depends_on:
+          - mongodb
+        networks:
+          - spring-cloud-network
+
+volumes:
+    mongodb:
+      driver: local
+    mongodb_log:
+    mongodb_config:
+
+networks:
+    spring-cloud-network:
+        driver: bridge
